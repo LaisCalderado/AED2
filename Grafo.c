@@ -72,6 +72,7 @@ boll criaAresta(GRAFO *gr, int vi, int vf){
     return(true);//Retorna 1;
     
 }
+
 void imprime (GRAFO *gr){
     //Total de arestas e vertices
     printf("Vertice: %d. Arestas: %d\n", gr->vertices, gr->arestas);
