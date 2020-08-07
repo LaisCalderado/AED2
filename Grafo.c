@@ -2,9 +2,6 @@
 #include<stdlib.h>
 #define true 1
 #define false 0
-#define Inicial 0
-#define TemCaminho 1
-#define SemCaminho 2
 
 typedef int boll;
 typedef int TipoPeso;
