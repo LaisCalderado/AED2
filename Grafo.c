@@ -1,15 +1,20 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<limits.h>
 #define true 1
 #define false 0
+#define BRANCO 0
+#define AMARELO 1
+#define VERMELHO 3
 
-typedef int boll;
+typedef int bool;
 typedef int TipoPeso;
+
 
 typedef struct adjacencia{
     //Vertice final, peso e o proximo da lista ligada
     int vertices;
-    //TipoPeso peso;
+    TipoPeso peso;
     struct adjacencia *prox;
         
 }ADJACENCIA;
@@ -24,7 +29,7 @@ typedef struct vertice{
 typedef struct grafo{
     //Numero de vertices e arestas
     int vertices;
-    int arestas;
+    int arestas; 
     //Arranjo de vertices
     VERTICE *adj;
 }GRAFO;
@@ -44,24 +49,24 @@ GRAFO *criaGrafo(int v){//Recebe o numero de vertices do grafo
     
 }
 //Criando a adjacencia (aresta)
-ADJACENCIA *criaAdj(int v){//Vai receber o vertice final da aresta e o peso
+ADJACENCIA *criaAdj(int v, int peso){//Vai receber o vertice final da aresta e o peso
     //Aloca espaço para um nó final na lista
     ADJACENCIA *temp = (ADJACENCIA *)malloc(sizeof(ADJACENCIA));
     //Assoocia a ele o vértice final da aresta e o peso
     temp ->vertices = v; 
-    //temp ->peso = peso;
+    temp ->peso = peso;
     temp -> prox = NULL;//O proximo campo é null e retorna
     return(temp);
 }
 //Uma aresta só é criada qndo add uma adjacencia a lista de um vertice
 //Aresta tem o grafo que vai de vi ate vf e o peso,
-boll criaAresta(GRAFO *gr, int vi, int vf){
+bool criaAresta(GRAFO *gr, int vi, int vf, TipoPeso p){
 
     if (!gr) return false;//Se o grafo for null retorna falso
     if ((vf < 0 ) || vf >= gr ->vertices) return false;//um vertice final invalido retorna false
     if ((vi < 0 ) || (vi >= gr -> vertices)) return false;//um vertice inicial invalido retorna false
     //Cria adjacencia na memoria
-    ADJACENCIA *novo = criaAdj(vf);//Adj recebe o vertice final e o peso
+    ADJACENCIA *novo = criaAdj(vf,p);//Adj recebe o vertice final e o peso
     //Insere a adj no inicio da lista de adj
     novo -> prox = gr -> adj[vi].cab; //O novo elemento recebe a cabeça da lista
     gr -> adj[vi].cab = novo;
@@ -70,13 +75,123 @@ boll criaAresta(GRAFO *gr, int vi, int vf){
     
 }
 
+void profundidade(GRAFO *g){
+    int i;
+    int cor[g->vertices];
+    //Inicializando todos os vertices como branco
+    for(i = 0; i < g->vertices; i++){
+        cor[i] = BRANCO;
+    }
+    for(i = 0; i < g->vertices; i++){
+        if (cor[i] ==BRANCO){
+            visitaP(g, i, cor);
+        }
+    } 
+}
+void visitaP( GRAFO *g, int i, int *cor){
+    //AO visitar o no ele é marcado de amarelo
+    cor[i] = AMARELO;
+    //Então é visitado suas adjacencias recursivamente
+    ADJACENCIA *v = g->adj[i].cab;
+    //Mas só visita vertices ainda não visitados
+    while (v){//Usa recurssividade para visitar as arestas
+        if (cor[v->vertices]==BRANCO){
+            visitaP(g, v->vertices,cor);
+        }
+        v = v->prox;
+    }
+    cor[i] = VERMELHO;
+    
+}
+//Inicializando o grafo
+//Arranjo de distancia, predecessor e ponto inicial
+void inicializaD(GRAFO *g, int *d, int *p, int s){
+    //
+    for (int v = 0; v < g->vertices; v++){
+        //Pega o maior valor e divide por 2 para não dar negativo
+        d[v] = INT_MAX/2;
+        //O predecessor de todos é -1
+        p[v] = -1;
+
+    }
+    //A distancia de todos é 0
+    d[s] = 0;
+    
+}
+void relaxa(GRAFO *g, int *d, int *p, int u, int v){
+    ADJACENCIA *ad = g->adj[u].cab;
+    while (ad && ad->vertices != v){
+        ad = ad->prox;
+    }
+
+    if (ad){
+        if (d[v] > d[u] + ad->peso){
+            d[v] = d[u] + ad->peso;
+            p[v] = u;
+        }
+    }    
+}
+int dijkstra (GRAFO *g, int s){
+    
+    int *d = (int *) malloc(g->vertices*sizeof(int));
+    int p[g->vertices];
+
+    bool aberto[g->vertices];
+    inicializaD(g,d,p,s);
+
+    int i;
+    for (i = 0; i < g->vertices; i++){
+        aberto[i] = true;
+    }
+
+    while (existeAberto(g,aberto)){
+        int u = menorDist(g,aberto,d);
+        aberto[u] = false;
+        ADJACENCIA *ad = g->adj[u].cab;
+    
+        while (ad){
+            relaxa(g,d,p,u,ad->vertices);
+            ad = ad -> peso;
+        }
+    }
+    return(d);  
+}
+
+bool existeaberto(GRAFO *g, int *aberto){
+
+    for (int i = 0; i < g->vertices; i++){
+        if (aberto[i]) return true;
+    return false;
+        
+    }
+    
+}
+
+int menorDist(GRAFO *g, int *aberto, int *d){
+    int i;
+    for (i = 0; i < g->vertices; i++)
+        if (aberto[i]) break;
+        
+    if (i == g) return -1;
+    
+    int menor = i;
+
+    for ( i = 0; i < g->vertices; i++)
+        if(aberto[i] && (d[menor]>d[i])) 
+            menor = i; 
+    return(menor);
+    
+    
+}
+
 void imprime (GRAFO *gr){
+ 
     //Total de arestas e vertices
     printf("Vertice: %d. Arestas: %d\n", gr->vertices, gr->arestas);
 
     //Para cada vertice fo grafo
     for (int i = 0; i < gr->vertices; i++){
-        printf("V%d:", i);//Imprime o numero do vertice
+        printf("\n Lista de Adjacencias do vertice %d\n cabeça ", i);//Imprime o numero do vertice
         ADJACENCIA *ad = gr ->adj[i].cab;//ad recebe a cabeça da lista de adjacencia
         
         while (ad){//Enquando ad não for null
@@ -89,33 +204,27 @@ void imprime (GRAFO *gr){
     }
 }
 
-
 int main(){
 
-    int vertices, arestas, vi, vf;
-
     GRAFO *gr = criaGrafo(6);
+
     
+    criaAresta(gr,0,1,3);
+    criaAresta(gr,1,3,1);
+    criaAresta(gr,1,2,0);
+    criaAresta(gr,2,4,2);
+    criaAresta(gr,3,5,6);
+    criaAresta(gr,3,4,4);
+    criaAresta(gr,4,1,4);
+    criaAresta(gr, 5,5,0);
 
-    criaAresta(gr,0,1);
-    criaAresta(gr,0,2);
-    criaAresta(gr,1,0);
-    criaAresta(gr,1,3);
-    criaAresta(gr,1,4);
-    criaAresta(gr,2,4);
-    criaAresta(gr,3,1);
-    criaAresta(gr,4,5);
-    //criaAresta(gr,5,6);
-    //criaAresta(gr,6,5);
+    int *r = dijkstra(gr,0);
 
-
-    /*Vertice: 5. Arestas: 6
-        V0:-> v2 -> v1 
-        V1:-> v4 -> v3 -> v0 
-        V2:-> v4 
-        V3:-> v1 
-        V4:-> v2
-    */
-
+    for (int i = 0; i < gr->vertices; i++){
+        printf("D(v0 -> v%d) = %d\n", i, r[i]);
+    }
+    
     imprime(gr);
+
+    return 0;
 }
